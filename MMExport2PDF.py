@@ -31,9 +31,9 @@ from pathlib import Path
 ## Thirdparty Imports
 ##
 
-# fpdf is acutally PyFPDF2
-from fpdf import FPDF, TitleStyle, Align
-from fpdf.enums import FileAttachmentAnnotationName 
+# fpdf is actually PyFPDF2
+from fpdf import FPDF, Align, TitleStyle
+from fpdf.enums import FileAttachmentAnnotationName
 
 __author__ = 'Alexander J. Lallier'
 __version__ = '1.0'
@@ -45,7 +45,7 @@ __contact__ = ''
 ## Globals Variables
 ##
 
-imageExtenstions = [ 'gif', 'png', 'jpeg', 'jpg' ]
+imageExtensions = [ 'gif', 'png', 'jpeg', 'jpg' ]
 
 mattermostURL = ''
 headers = {}
@@ -330,7 +330,7 @@ def main():
                         if len(postFiles) > 0:
                             for file in postFiles:
                                 # file["extension"] == "gif"
-                                if file["extension"].lower() in imageExtenstions:
+                                if file["extension"].lower() in imageExtensions:
                                     pictures.append(file)
                                 else:
                                     files.append(file)
@@ -709,8 +709,40 @@ def getChannelMembersFn(channel):
 
 
 def handleUnicode(text):
-    newText = text.encode('latin-1', 'replace').decode('latin-1')
-    return newText
+    """
+    Handle Unicode text for PDF output by replacing problematic characters.
+
+    Args:
+        text (str): The text to process
+
+    Returns:
+        str: Text with Unicode characters handled appropriately
+    """
+    if not isinstance(text, str):
+        return str(text)
+
+    # Replace common problematic Unicode characters
+    replacements = {
+        '\u201c': '"',  # Left double quotation mark
+        '\u201d': '"',  # Right double quotation mark
+        '\u2018': "'",  # Left single quotation mark
+        '\u2019': "'",  # Right single quotation mark
+        '\u2013': "-",  # En dash
+        '\u2014': "-",  # Em dash
+        '\u2026': "...",  # Horizontal ellipsis
+    }
+
+    result = text
+    for old, new in replacements.items():
+        result = result.replace(old, new)
+
+    # For any remaining problematic characters, use error replacement
+    try:
+        result.encode('latin-1')
+    except UnicodeEncodeError:
+        result = text.encode('utf-8', errors='replace').decode('utf-8')
+
+    return result
 
 
 
@@ -718,13 +750,13 @@ class PDF(FPDF):
     def __init__(self):
         super().__init__()
 
-        SYSTEM_TTFONTS = '/usr/share/fonts/truetype'
+        SYSTEM_TTFONTS = 'C:/Windows/Fonts'
 
-        self.add_font("NotoSans", style="", fname=os.path.join(SYSTEM_TTFONTS, "noto/NotoSans-Regular.ttf"))
-        self.add_font("NotoSans", style="B", fname=os.path.join(SYSTEM_TTFONTS, "noto/NotoSans-Bold.ttf"))
-        self.add_font("NotoSans", style="I", fname=os.path.join(SYSTEM_TTFONTS, "noto/NotoSans-Italic.ttf"))
-        self.add_font("NotoSans", style="BI", fname=os.path.join(SYSTEM_TTFONTS, "noto/NotoSans-BoldItalic.ttf"))
-        self.set_font('NotoSans', '', 10)
+        self.add_font("Arial", style="", fname=os.path.join(SYSTEM_TTFONTS, "arial.ttf"))
+        self.add_font("Arial", style="B", fname=os.path.join(SYSTEM_TTFONTS, "arialbd.ttf"))
+        self.add_font("Arial", style="I", fname=os.path.join(SYSTEM_TTFONTS, "ariali.ttf"))
+        self.add_font("Arial", style="BI", fname=os.path.join(SYSTEM_TTFONTS, "arialbi.ttf"))
+        self.set_font('Arial', '', 10)
 
         self.set_section_title_styles(
 
@@ -765,7 +797,7 @@ class PDF(FPDF):
 
     def header(self):
         # Select Arial bold 15
-        self.set_font("NotoSans", style='B', size=12)
+        self.set_font("Arial", style='B', size=12)
 
         if( channelDisplayName ):
             self.multi_cell(w=0, txt=channelDisplayName, align='C')
@@ -778,7 +810,7 @@ class PDF(FPDF):
         # Go to 1.5 cm from bottom
         self.set_y(-15)
         # Select Arial italic 8
-        self.set_font("NotoSans", style='I', size=8)
+        self.set_font("Arial", style='I', size=8)
         # Print centered85 page number
         self.cell(0, 10, f'Page {self.page_no()}', 0, align='C')
 
